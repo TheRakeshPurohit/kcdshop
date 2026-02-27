@@ -11,6 +11,8 @@ export type RemoteLesson = {
 	sectionSlug: string | null
 }
 
+export type ProductModuleType = 'workshop' | 'tutorial'
+
 type NormalizeSlug = (value: string) => string
 
 export function stripEpicAiSlugSuffix(value: string) {
@@ -21,18 +23,21 @@ export function stripEpicAiSlugSuffix(value: string) {
 export function formatProductLessonUrl({
 	productHost,
 	productSlug,
+	moduleType = 'workshop',
 	lessonSlug,
 	sectionSlug,
 }: {
 	productHost: string
 	productSlug: string
+	moduleType?: ProductModuleType
 	lessonSlug: string
 	sectionSlug: string | null
 }) {
+	const productPath = moduleType === 'tutorial' ? 'tutorials' : 'workshops'
 	// The product site will typically redirect to a section-specific path when needed.
 	return sectionSlug
-		? `https://${productHost}/workshops/${productSlug}/${sectionSlug}/${lessonSlug}`
-		: `https://${productHost}/workshops/${productSlug}/${lessonSlug}`
+		? `https://${productHost}/${productPath}/${productSlug}/${sectionSlug}/${lessonSlug}`
+		: `https://${productHost}/${productPath}/${productSlug}/${lessonSlug}`
 }
 
 export async function isDirectory(targetPath: string) {
@@ -100,6 +105,7 @@ export async function fetchRemoteWorkshopLessons({
 	| {
 			status: 'success'
 			lessons: Array<RemoteLesson>
+			moduleType: ProductModuleType
 	  }
 	| { status: 'error'; message: string }
 > {
@@ -169,6 +175,13 @@ export async function fetchRemoteWorkshopLessons({
 		data && typeof data === 'object' && 'resources' in data
 			? (data as { resources?: unknown }).resources
 			: null
+	const moduleType: ProductModuleType =
+		data &&
+		typeof data === 'object' &&
+		'moduleType' in data &&
+		(data as { moduleType?: unknown }).moduleType === 'tutorial'
+			? 'tutorial'
+			: 'workshop'
 
 	if (!Array.isArray(resources)) {
 		return {
@@ -230,5 +243,5 @@ export async function fetchRemoteWorkshopLessons({
 		}
 	}
 
-	return { status: 'success', lessons }
+	return { status: 'success', lessons, moduleType }
 }
