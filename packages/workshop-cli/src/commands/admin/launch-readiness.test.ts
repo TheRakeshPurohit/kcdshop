@@ -35,10 +35,12 @@ async function createWorkshopFixture({
 	productHost = 'www.epicweb.dev',
 	productSlug = 'test-workshop',
 	includeProductSlug = true,
+	productPath = 'workshops',
 }: {
 	productHost?: string
 	productSlug?: string
 	includeProductSlug?: boolean
+	productPath?: 'workshops' | 'tutorials'
 } = {}) {
 	const root = await fs.mkdtemp(path.join(os.tmpdir(), 'epicshop-launch-'))
 
@@ -58,30 +60,30 @@ async function createWorkshopFixture({
 	// Workshop intro + wrap-up
 	await writeFile(
 		path.join(root, 'exercises', 'README.mdx'),
-		`# Workshop Intro\n\n<EpicVideo url="https://${productHost}/workshops/${productSlug}/workshop-intro" />\n`,
+		`# Workshop Intro\n\n<EpicVideo url="https://${productHost}/${productPath}/${productSlug}/workshop-intro" />\n`,
 	)
 	await writeFile(
 		path.join(root, 'exercises', 'FINISHED.mdx'),
-		`# Workshop Wrap Up\n\n<EpicVideo url="https://${productHost}/workshops/${productSlug}/workshop-wrap-up" />\n`,
+		`# Workshop Wrap Up\n\n<EpicVideo url="https://${productHost}/${productPath}/${productSlug}/workshop-wrap-up" />\n`,
 	)
 
 	// One exercise with one step
 	const exRoot = path.join(root, 'exercises', '01.first-exercise')
 	await writeFile(
 		path.join(exRoot, 'README.mdx'),
-		`# Exercise Intro\n\n<EpicVideo url="https://${productHost}/workshops/${productSlug}/exercise-intro" />\n`,
+		`# Exercise Intro\n\n<EpicVideo url="https://${productHost}/${productPath}/${productSlug}/exercise-intro" />\n`,
 	)
 	await writeFile(
 		path.join(exRoot, 'FINISHED.mdx'),
-		`# Exercise Summary\n\n<EpicVideo url="https://${productHost}/workshops/${productSlug}/exercise-summary" />\n`,
+		`# Exercise Summary\n\n<EpicVideo url="https://${productHost}/${productPath}/${productSlug}/exercise-summary" />\n`,
 	)
 	await writeFile(
 		path.join(exRoot, '01.problem', 'README.mdx'),
-		`# Step Problem\n\n<EpicVideo url="https://${productHost}/workshops/${productSlug}/step-problem" />\n`,
+		`# Step Problem\n\n<EpicVideo url="https://${productHost}/${productPath}/${productSlug}/step-problem" />\n`,
 	)
 	await writeFile(
 		path.join(exRoot, '01.solution', 'README.mdx'),
-		`# Step Solution\n\n<EpicVideo url="https://${productHost}/workshops/${productSlug}/step-solution" />\n`,
+		`# Step Solution\n\n<EpicVideo url="https://${productHost}/${productPath}/${productSlug}/step-solution" />\n`,
 	)
 
 	return {
@@ -302,4 +304,52 @@ test('fails when an EpicVideo url does not return 200 to HEAD', async () => {
 			skipHead: false,
 		}),
 	).resolves.toEqual(expect.objectContaining({ success: false }))
+})
+
+test('accepts /tutorials embed paths and reports tutorial urls in remote mismatch output', async () => {
+	const productHost = 'www.epicweb.dev'
+	const productSlug = 'test-tutorial~abc123'
+	await using workshop = await createWorkshopFixture({
+		productHost,
+		productSlug,
+		productPath: 'tutorials',
+	})
+
+	vi.stubGlobal(
+		'fetch',
+		vi.fn(async () => {
+			return new Response(
+				JSON.stringify({
+					moduleType: 'tutorial',
+					resources: [
+						{ _type: 'lesson', _id: '1', slug: 'workshop-intro' },
+						{
+							_type: 'section',
+							_id: 's1',
+							slug: 'functions-section',
+							lessons: [{ _type: 'lesson', _id: '2', slug: 'missing-lesson' }],
+						},
+					],
+				}),
+				{ status: 200 },
+			)
+		}),
+	)
+
+	const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+	const result = await launchReadiness({
+		workshopRoot: workshop.root,
+		silent: false,
+		skipRemote: false,
+		skipHead: true,
+	})
+
+	expect(result.success).toBe(false)
+	const output = logSpy.mock.calls.map((c) => c.join(' ')).join('\n')
+	expect(output).toContain(
+		`https://${productHost}/tutorials/${productSlug}/functions-section/missing-lesson`,
+	)
+	expect(output).not.toContain(
+		'/workshops/test-tutorial~abc123/functions-section/missing-lesson',
+	)
 })

@@ -29,6 +29,23 @@ type OrderedVideoFile = {
 
 type SetVideosOutcome = 'inserted' | 'updated' | 'unchanged'
 
+<<<<<<< Updated upstream
+=======
+type RemoteLesson = {
+	slug: string
+	sectionSlug: string | null
+}
+
+type ProductModuleType = 'workshop' | 'tutorial'
+
+function getProductModulePathSegment(moduleType: ProductModuleType) {
+	return moduleType === 'tutorial' ? 'tutorials' : 'workshops'
+}
+
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 export type SetVideosOptions = {
 	/**
 	 * Defaults to `process.env.EPICSHOP_CONTEXT_CWD ?? process.cwd()`.
@@ -66,6 +83,182 @@ function createFailureResult(
 	}
 }
 
+<<<<<<< Updated upstream
+=======
+function stripEpicAiSlugSuffix(value: string) {
+	// EpicAI embeds sometimes include a `~...` suffix in the slug segment.
+	return value.replace(/~[^ ]*$/, '')
+}
+
+function formatProductLessonUrl({
+	productHost,
+	productSlug,
+	moduleType,
+	lessonSlug,
+	sectionSlug,
+}: {
+	productHost: string
+	productSlug: string
+	moduleType: ProductModuleType
+	lessonSlug: string
+	sectionSlug: string | null
+}) {
+	const productPath = getProductModulePathSegment(moduleType)
+	return sectionSlug
+		? `https://${productHost}/${productPath}/${productSlug}/${sectionSlug}/${lessonSlug}`
+		: `https://${productHost}/${productPath}/${productSlug}/${lessonSlug}`
+}
+
+async function isDirectory(targetPath: string) {
+	try {
+		return (await fs.stat(targetPath)).isDirectory()
+	} catch {
+		return false
+	}
+}
+
+async function resolveMdxFile(
+	dir: string,
+	baseName: 'README' | 'FINISHED',
+): Promise<string | null> {
+	const mdx = path.join(dir, `${baseName}.mdx`)
+	if (await pathExists(mdx)) return mdx
+	return null
+}
+
+async function fetchRemoteWorkshopLessons({
+	productHost,
+	workshopSlug,
+}: {
+	productHost: string
+	workshopSlug: string
+}): Promise<
+	| {
+			status: 'success'
+			lessons: Array<RemoteLesson>
+			moduleType: ProductModuleType
+	  }
+	| { status: 'error'; message: string }
+> {
+	const url = `https://${productHost}/api/workshops/${encodeURIComponent(workshopSlug)}`
+
+	const fetchOnce = async (accessToken?: string) => {
+		const timeout = AbortSignal.timeout(15_000)
+		const headers: Record<string, string> = {}
+		if (accessToken) headers.authorization = `Bearer ${accessToken}`
+		return fetch(url, { headers, signal: timeout })
+	}
+
+	let response: Response | null = null
+	try {
+		response = await fetchOnce()
+	} catch (error) {
+		return {
+			status: 'error',
+			message: `Failed to fetch product workshop data: ${getErrorMessage(error)}`,
+		}
+	}
+
+	if (response.status === 401 || response.status === 403) {
+		const authInfo = await getAuthInfo({ productHost }).catch(() => null)
+		const accessToken = authInfo?.tokenSet?.access_token
+		if (accessToken) {
+			try {
+				response = await fetchOnce(accessToken)
+			} catch (error) {
+				return {
+					status: 'error',
+					message: `Failed to fetch product workshop data (after auth): ${getErrorMessage(
+						error,
+					)}`,
+				}
+			}
+		}
+	}
+
+	if (!response.ok) {
+		const body = await response.text().catch(() => '')
+		const hint =
+			response.status === 401 || response.status === 403
+				? ` (try: npx epicshop auth login ${productHost.replace(/^www\./, '')})`
+				: response.status === 404
+					? ` (check epicshop.product.host + epicshop.product.slug)`
+					: ''
+		return {
+			status: 'error',
+			message: `Product API request failed: ${response.status} ${response.statusText}${hint}${
+				body ? `\n${body}` : ''
+			}`,
+		}
+	}
+
+	let data: unknown
+	try {
+		data = await response.json()
+	} catch (error) {
+		return {
+			status: 'error',
+			message: `Product API response was not valid JSON: ${getErrorMessage(error)}`,
+		}
+	}
+
+	const resources =
+		data && typeof data === 'object' && 'resources' in data
+			? (data as { resources?: unknown }).resources
+			: null
+	const moduleType =
+		data &&
+		typeof data === 'object' &&
+		'moduleType' in data &&
+		(data as { moduleType?: unknown }).moduleType === 'tutorial'
+			? 'tutorial'
+			: 'workshop'
+
+	if (!Array.isArray(resources)) {
+		return {
+			status: 'error',
+			message: `Product API response did not include an array "resources" field`,
+		}
+	}
+
+	const lessons: Array<RemoteLesson> = []
+	for (const resource of resources) {
+		if (!resource || typeof resource !== 'object') continue
+		const item = resource as Record<string, unknown>
+
+		if (item._type === 'lesson') {
+			const slug = item.slug
+			if (typeof slug === 'string' && slug.trim().length > 0) {
+				lessons.push({ slug: stripEpicAiSlugSuffix(slug), sectionSlug: null })
+			}
+			continue
+		}
+
+		if (item._type === 'section') {
+			const sectionSlug =
+				typeof item.slug === 'string' && item.slug.trim().length > 0
+					? stripEpicAiSlugSuffix(item.slug.trim())
+					: null
+			const sectionLessons = item.lessons
+			if (!Array.isArray(sectionLessons)) continue
+			for (const lesson of sectionLessons) {
+				if (!lesson || typeof lesson !== 'object') continue
+				const lessonItem = lesson as Record<string, unknown>
+				const slug = lessonItem.slug
+				if (typeof slug === 'string' && slug.trim().length > 0) {
+					lessons.push({
+						slug: stripEpicAiSlugSuffix(slug),
+						sectionSlug,
+					})
+				}
+			}
+		}
+	}
+
+	return { status: 'success', lessons, moduleType }
+}
+
+>>>>>>> Stashed changes
 async function collectOrderedVideoFiles({
 	workshopRoot,
 }: {
@@ -500,6 +693,7 @@ export async function setVideos(
 	}
 
 	const remoteLessons = remoteResult.lessons
+	const remoteModuleType = remoteResult.moduleType
 	if (remoteLessons.length === 0) {
 		return fail(
 			'Product API returned no lessons. Is the workshop published on the product site?',
@@ -521,6 +715,7 @@ export async function setVideos(
 				const lessonUrl = formatProductLessonUrl({
 					productHost,
 					productSlug,
+					moduleType: remoteModuleType,
 					lessonSlug: lesson.slug,
 					sectionSlug: lesson.sectionSlug,
 				})
@@ -539,6 +734,7 @@ export async function setVideos(
 			const lessonUrl = formatProductLessonUrl({
 				productHost,
 				productSlug,
+				moduleType: remoteModuleType,
 				lessonSlug: lesson.slug,
 				sectionSlug: lesson.sectionSlug,
 			})
@@ -580,6 +776,7 @@ export async function setVideos(
 		const targetUrl = formatProductLessonUrl({
 			productHost,
 			productSlug,
+			moduleType: remoteModuleType,
 			lessonSlug: lesson.slug,
 			sectionSlug: lesson.sectionSlug,
 		})
@@ -637,6 +834,7 @@ export async function setVideos(
 	).length
 
 	if (remoteLessons.length > requiredLessonSlots) {
+<<<<<<< Updated upstream
 		const extras = remoteLessons.slice(requiredLessonSlots).map((lesson) =>
 			formatProductLessonUrl({
 				productHost,
@@ -645,6 +843,19 @@ export async function setVideos(
 				sectionSlug: lesson.sectionSlug,
 			}),
 		)
+=======
+		const extras = remoteLessons
+			.slice(requiredLessonSlots)
+			.map((lesson) =>
+				formatProductLessonUrl({
+					productHost,
+					productSlug,
+					moduleType: remoteModuleType,
+					lessonSlug: lesson.slug,
+					sectionSlug: lesson.sectionSlug,
+				}),
+			)
+>>>>>>> Stashed changes
 		warnings.push(
 			`Product has ${extras.length} extra lesson(s) beyond mapped lesson slots:\n- ${extras.join('\n- ')}`,
 		)

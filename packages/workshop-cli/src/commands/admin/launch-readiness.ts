@@ -64,14 +64,38 @@ type ContentCheckFile = {
 	relativePath: string
 }
 
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+=======
+>>>>>>> Stashed changes
+type ProductModuleType = 'workshop' | 'tutorial'
+
+function stripEpicAiSlugSuffix(value: string) {
+	// EpicAI embeds sometimes include a `~...` suffix in the slug segment.
+	return value.replace(/~[^ ]*$/, '')
+}
+
+function isProductLessonPathSegment(segment: string | undefined) {
+	return segment === 'workshops' || segment === 'tutorials'
+}
+
+function getProductModulePathSegment(moduleType: ProductModuleType) {
+	return moduleType === 'tutorial' ? 'tutorials' : 'workshops'
+}
+
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 function normalizeHost(host: string) {
 	return host.toLowerCase().replace(/^www\./, '')
 }
 
-function parseEpicWorkshopSlugFromEmbedUrl(urlString: string): string | null {
+function parseEpicProductSlugFromEmbedUrl(urlString: string): string | null {
 	const parseSegments = (segments: Array<string>) => {
-		// Expected: /workshops/<workshopSlug>/...
-		if (segments[0] !== 'workshops') return null
+		// Expected: /workshops/<slug>/... or /tutorials/<slug>/...
+		if (!isProductLessonPathSegment(segments[0])) return null
 		const workshopSlug = segments[1] ?? null
 		return workshopSlug ? stripEpicAiSlugSuffix(workshopSlug) : null
 	}
@@ -114,6 +138,29 @@ function parseEpicLessonSlugFromEmbedUrl(urlString: string): string | null {
 	}
 }
 
+<<<<<<< Updated upstream
+=======
+function formatProductLessonUrl({
+	productHost,
+	productSlug,
+	moduleType,
+	lessonSlug,
+	sectionSlug,
+}: {
+	productHost: string
+	productSlug: string
+	moduleType: ProductModuleType
+	lessonSlug: string
+	sectionSlug: string | null
+}) {
+	const productPath = getProductModulePathSegment(moduleType)
+	// The product site will typically redirect to a section-specific path when needed.
+	return sectionSlug
+		? `https://${productHost}/${productPath}/${productSlug}/${sectionSlug}/${lessonSlug}`
+		: `https://${productHost}/${productPath}/${productSlug}/${lessonSlug}`
+}
+
+>>>>>>> Stashed changes
 function formatIssue(issue: Issue, workshopRoot: string) {
 	const icon = issue.level === 'error' ? chalk.red('❌') : chalk.yellow('⚠️ ')
 	const filePart = issue.file
@@ -289,6 +336,127 @@ async function buildExpectedFiles({
 	return { files, contentFiles, issues }
 }
 
+<<<<<<< Updated upstream
+=======
+async function fetchRemoteWorkshopLessonSlugs({
+	productHost,
+	workshopSlug,
+}: {
+	productHost: string
+	workshopSlug: string
+}): Promise<
+	| {
+			status: 'success'
+			lessons: Array<{ slug: string; sectionSlug: string | null }>
+			moduleType: ProductModuleType
+	  }
+	| { status: 'error'; message: string }
+> {
+	const url = `https://${productHost}/api/workshops/${encodeURIComponent(workshopSlug)}`
+
+	const fetchOnce = async (accessToken?: string) => {
+		const timeout = AbortSignal.timeout(15_000)
+		const headers: Record<string, string> = {}
+		if (accessToken) headers.authorization = `Bearer ${accessToken}`
+		return fetch(url, { headers, signal: timeout })
+	}
+
+	let response: Response | null = null
+	try {
+		response = await fetchOnce()
+	} catch (error) {
+		return {
+			status: 'error',
+			message: `Failed to fetch product workshop data: ${getErrorMessage(error)}`,
+		}
+	}
+
+	if (response.status === 401 || response.status === 403) {
+		const authInfo = await getAuthInfo({ productHost }).catch(() => null)
+		const accessToken = authInfo?.tokenSet?.access_token
+		if (accessToken) {
+			try {
+				response = await fetchOnce(accessToken)
+			} catch (error) {
+				return {
+					status: 'error',
+					message: `Failed to fetch product workshop data (after auth): ${getErrorMessage(
+						error,
+					)}`,
+				}
+			}
+		}
+	}
+
+	if (!response.ok) {
+		const body = await response.text().catch(() => '')
+		const hint =
+			response.status === 401 || response.status === 403
+				? ` (try: npx epicshop auth login ${productHost.replace(/^www\./, '')})`
+				: response.status === 404
+					? ` (check epicshop.product.host + epicshop.product.slug)`
+					: ''
+		return {
+			status: 'error',
+			message: `Product API request failed: ${response.status} ${response.statusText}${hint}${
+				body ? `\n${body}` : ''
+			}`,
+		}
+	}
+
+	let data: any
+	try {
+		data = await response.json()
+	} catch (error) {
+		return {
+			status: 'error',
+			message: `Product API response was not valid JSON: ${getErrorMessage(error)}`,
+		}
+	}
+
+	const resources = data?.resources
+	const moduleType: ProductModuleType =
+		data?.moduleType === 'tutorial' ? 'tutorial' : 'workshop'
+	if (!Array.isArray(resources)) {
+		return {
+			status: 'error',
+			message: `Product API response did not include an array "resources" field`,
+		}
+	}
+
+	const lessons: Array<{ slug: string; sectionSlug: string | null }> = []
+	for (const resource of resources) {
+		if (!resource || typeof resource !== 'object') continue
+		const r = resource as Record<string, unknown>
+
+		if (r._type === 'lesson') {
+			const slug = r.slug
+			if (typeof slug === 'string') lessons.push({ slug, sectionSlug: null })
+			continue
+		}
+
+		if (r._type === 'section') {
+			const sectionSlug =
+				typeof r.slug === 'string' && r.slug.trim().length > 0
+					? r.slug.trim()
+					: null
+			const sectionLessons = r.lessons
+			if (!Array.isArray(sectionLessons)) continue
+			for (const lesson of sectionLessons) {
+				if (!lesson || typeof lesson !== 'object') continue
+				const l = lesson as Record<string, unknown>
+				const slug = l.slug
+				if (typeof slug === 'string') {
+					lessons.push({ slug, sectionSlug })
+				}
+			}
+		}
+	}
+
+	return { status: 'success', lessons, moduleType }
+}
+
+>>>>>>> Stashed changes
 async function checkMinContentLength({
 	fullPath,
 	minChars,
@@ -801,14 +969,14 @@ export async function launchReadiness(
 			}
 
 			const segments = url.pathname.split('/').filter(Boolean)
-			// Expected: /workshops/<workshopSlug>/...
-			if (segments[0] !== 'workshops') {
+			// Expected: /workshops/<workshopSlug>/... or /tutorials/<tutorialSlug>/...
+			if (!isProductLessonPathSegment(segments[0])) {
 				for (const file of usedBy) {
 					issues.push({
 						level: 'warning',
 						code: 'epic-video-url-unexpected-path',
 						message:
-							'EpicVideo url path does not start with /workshops/... (this may break progress tracking)',
+							'EpicVideo url path does not start with /workshops/... or /tutorials/... (this may break progress tracking)',
 						file,
 					})
 				}
@@ -839,7 +1007,7 @@ export async function launchReadiness(
 			for (const embedUrl of embedOccurrences.keys()) {
 				const lessonSlug = parseEpicLessonSlugFromEmbedUrl(embedUrl)
 				if (!lessonSlug) continue
-				const workshopSlug = parseEpicWorkshopSlugFromEmbedUrl(embedUrl)
+				const workshopSlug = parseEpicProductSlugFromEmbedUrl(embedUrl)
 				if (!workshopSlug || workshopSlug !== productSlug) continue
 				try {
 					const url = new URL(embedUrl)
@@ -863,6 +1031,7 @@ export async function launchReadiness(
 					message: remote.message,
 				})
 			} else {
+				const remoteModuleType = remote.moduleType
 				const remoteLessons = remote.lessons
 					.map((l) => ({
 						slug: stripEpicAiSlugSuffix(l.slug),
@@ -903,6 +1072,7 @@ export async function launchReadiness(
 							return `- ${slug}: ${formatProductLessonUrl({
 								productHost,
 								productSlug,
+								moduleType: remoteModuleType,
 								lessonSlug: slug,
 								sectionSlug: remoteLesson?.sectionSlug ?? null,
 							})}`
@@ -919,7 +1089,7 @@ export async function launchReadiness(
 				for (const [embedUrl, usedBy] of embedOccurrences.entries()) {
 					const lessonSlug = parseEpicLessonSlugFromEmbedUrl(embedUrl)
 					if (!lessonSlug) continue
-					const workshopSlug = parseEpicWorkshopSlugFromEmbedUrl(embedUrl)
+					const workshopSlug = parseEpicProductSlugFromEmbedUrl(embedUrl)
 					if (!workshopSlug || workshopSlug !== productSlug) continue
 					try {
 						const url = new URL(embedUrl)

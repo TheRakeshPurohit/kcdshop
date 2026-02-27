@@ -122,10 +122,12 @@ Here is the solution.
 function mockProductWorkshopResponse({
 	productHost = 'www.epicweb.dev',
 	productSlug = 'test-workshop',
+	moduleType = 'workshop',
 	remoteLessons,
 }: {
 	productHost?: string
 	productSlug?: string
+	moduleType?: 'workshop' | 'tutorial'
 	remoteLessons: Array<{
 		type: 'lesson' | 'section'
 		slug: string
@@ -158,7 +160,9 @@ function mockProductWorkshopResponse({
 			const url = String(input)
 			const expected = `https://${productHost}/api/workshops/${productSlug}`
 			if (url === expected) {
-				return new Response(JSON.stringify({ resources }), { status: 200 })
+				return new Response(JSON.stringify({ moduleType, resources }), {
+					status: 200,
+				})
 			}
 			return new Response('Not Found', { status: 404 })
 		}),
@@ -372,4 +376,42 @@ test('prints failure details when set-videos fails and silent is false', async (
 		'Not enough product lessons to map onto workshop files',
 	)
 	expect(output).toContain('Product lessons returned by API (in order):')
+})
+
+test('uses /tutorials paths when product API reports moduleType tutorial', async () => {
+	await using fixture = await createWorkshopFixture({
+		productSlug: 'test-tutorial~abc123',
+	})
+	const { root, paths } = fixture
+
+	mockProductWorkshopResponse({
+		productSlug: 'test-tutorial~abc123',
+		moduleType: 'tutorial',
+		remoteLessons: [
+			{ type: 'lesson', slug: 'tutorial-intro' },
+			{
+				type: 'section',
+				slug: 'section-one',
+				lessons: [
+					{ slug: 'exercise-intro' },
+					{ slug: 'step-problem' },
+					{ slug: 'exercise-summary' },
+				],
+			},
+			{ type: 'lesson', slug: 'tutorial-wrap-up' },
+		],
+	})
+
+	const result = await setVideos({ workshopRoot: root, silent: true })
+	expect(result.success).toBe(true)
+
+	const workshopReadme = await fs.readFile(paths.workshopReadmePath, 'utf8')
+	expect(workshopReadme).toContain(
+		'https://www.epicweb.dev/tutorials/test-tutorial~abc123/tutorial-intro',
+	)
+
+	const exerciseReadme = await fs.readFile(paths.exerciseReadmePath, 'utf8')
+	expect(exerciseReadme).toContain(
+		'https://www.epicweb.dev/tutorials/test-tutorial~abc123/section-one/exercise-intro',
+	)
 })
