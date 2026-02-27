@@ -640,17 +640,15 @@ export async function setVideos(
 	).length
 
 	if (remoteLessons.length > requiredLessonSlots) {
-		const extras = remoteLessons
-			.slice(requiredLessonSlots)
-			.map((lesson) =>
-				formatProductLessonUrl({
-					productHost,
-					productSlug,
-					moduleType: remoteModuleType,
-					lessonSlug: lesson.slug,
-					sectionSlug: lesson.sectionSlug,
-				}),
-			)
+		const extras = remoteLessons.slice(requiredLessonSlots).map((lesson) =>
+			formatProductLessonUrl({
+				productHost,
+				productSlug,
+				moduleType: remoteModuleType,
+				lessonSlug: lesson.slug,
+				sectionSlug: lesson.sectionSlug,
+			}),
+		)
 		warnings.push(
 			`Product has ${extras.length} extra lesson(s) beyond mapped lesson slots:\n- ${extras.join('\n- ')}`,
 		)
