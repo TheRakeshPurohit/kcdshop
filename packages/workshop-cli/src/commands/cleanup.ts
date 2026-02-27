@@ -881,7 +881,14 @@ export async function cleanup({
 					// explicit `--workshops` were provided, we treat the current workshop
 					// as the only workshop candidate. This avoids suggesting other
 					// workshops in prompts and keeps size estimates accurate.
-					allWorkshops = [workshopFromCwd]
+					updateSpinner(analysisSpinner, 'Resolving current workshop...')
+					const repoWorkshops = await listWorkshopsInDirectory(reposDir)
+					const matchingRepoWorkshop = repoWorkshops.find(
+						(workshop) => workshop.repoName === workshopFromCwd.repoName,
+					)
+					// Prefer the repos-directory path when available so workshop IDs are
+					// stable even when cwd uses an equivalent symlinked path.
+					allWorkshops = [matchingRepoWorkshop ?? workshopFromCwd]
 				} else {
 					updateSpinner(analysisSpinner, 'Finding installed workshops...')
 					allWorkshops = await listWorkshopsInDirectory(reposDir)
@@ -907,6 +914,13 @@ export async function cleanup({
 					const cwdId = getWorkshopInstanceId(workshopFromCwd.path)
 					contextWorkshop =
 						workshopIdentities.find((workshop) => workshop.id === cwdId) ?? null
+				}
+				if (
+					!contextWorkshop &&
+					shouldScopeToCwdWorkshop &&
+					workshopIdentities.length === 1
+				) {
+					contextWorkshop = workshopIdentities[0]
 				}
 			}
 
