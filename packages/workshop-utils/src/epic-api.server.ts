@@ -292,13 +292,6 @@ async function getEpicVideoInfo({
 				return null
 			}
 
-			// this may be temporary until the /tutorials/ endpoint supports /api
-			if (epicUrl.pathname.startsWith('/tutorials/')) {
-				epicUrl.pathname = epicUrl.pathname.replace(
-					/^\/tutorials\//,
-					'/workshops/',
-				)
-			}
 			const epicPathSegments = epicUrl.pathname.split('/').filter(Boolean)
 			if (epicPathSegments.at(-1) === 'embed') {
 				epicPathSegments.pop()
