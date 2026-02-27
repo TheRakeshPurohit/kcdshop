@@ -12,7 +12,6 @@ import {
 	fetchRemoteWorkshopLessons,
 	isDirectory,
 	resolveMdxFile,
-	stripEpicAiSlugSuffix,
 } from './workshop-content-utils.js'
 
 type IssueLevel = 'error' | 'warning'

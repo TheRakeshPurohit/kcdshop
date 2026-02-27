@@ -920,7 +920,7 @@ export async function cleanup({
 					shouldScopeToCwdWorkshop &&
 					workshopIdentities.length === 1
 				) {
-					contextWorkshop = workshopIdentities[0]
+					contextWorkshop = workshopIdentities[0] ?? null
 				}
 			}
 
