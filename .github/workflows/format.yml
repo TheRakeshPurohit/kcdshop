@@ -49,7 +49,7 @@ jobs:
           .prettierignore
 
       - name: 🔍 Run Oxlint --fix
-        run: oxlint . --fix
+        run: npm exec -- oxlint . --fix
 
       - name: 💾 Commit changes
         run: |
