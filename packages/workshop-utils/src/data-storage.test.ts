@@ -263,6 +263,6 @@ test('migrateLegacyData removes legacy directory when empty', async () => {
 })
 
 /*
-eslint
-	@typescript-eslint/no-unused-vars: "off",
+oxlint
+	typescript/no-unused-vars: "off",
 */

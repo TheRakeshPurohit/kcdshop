@@ -22,11 +22,14 @@ chai.use(chaiDOM)
 // I *think* vitest is using the extend API wrong or something 🤷‍♂️
 // this works though so...
 ;(chai.expect as ExpectStatic).extend(chai.expect, matchers)
+
 declare module '@vitest/expect' {
-	interface JestAssertion<T = any> extends matchers.TestingLibraryMatchers<
-		ReturnType<typeof expect.stringContaining>,
-		T
-	> {}
+	interface JestAssertion<T = any>
+		// oxlint-disable-next-line import/namespace -- type exists at runtime but plugin import cannot resolve from this namespace in declaration merging
+		extends matchers.TestingLibraryMatchers<
+			ReturnType<typeof expect.stringContaining>,
+			T
+		> {}
 }
 
 // in the browser logging out the element is not necessary

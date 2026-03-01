@@ -46,7 +46,7 @@ This repository has two main CI workflows that run on pushes to `main`:
 
 ### Auto Format Workflow
 
-- Runs Prettier and ESLint with `--fix` to automatically format code
+- Runs Prettier and Oxlint with `--fix` to automatically format code
 - Commits any formatting changes with message "chore: cleanup 🧹"
 - When changes are committed, triggers a new validation workflow run to ensure
   release happens on the formatted code

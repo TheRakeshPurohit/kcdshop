@@ -251,69 +251,65 @@ export async function login(
 			}, deviceResponse.expires_in * 1000)
 		})
 
-		try {
-			const tokenSet = await Promise.race([
-				client.pollDeviceAuthorizationGrant(config, deviceResponse),
-				timeoutPromise,
-			])
+		const tokenSet = await Promise.race([
+			client.pollDeviceAuthorizationGrant(config, deviceResponse),
+			timeoutPromise,
+		])
 
-			if (!tokenSet) {
-				const message = 'No token received from authorization'
-				if (!silent) {
-					console.error(chalk.red(`❌ ${message}`))
-				}
-				return { success: false, message }
-			}
-
-			const UserInfoSchema = z.object({
-				id: z.string(),
-				email: z.string(),
-				name: z.string().nullable().optional(),
-			})
-
-			const protectedResourceResponse = await client.fetchProtectedResource(
-				config,
-				tokenSet.access_token,
-				new URL(`${issuer}/userinfo`),
-				'GET',
-			)
-			const userinfoRaw = await protectedResourceResponse.json()
-			const userinfoResult = UserInfoSchema.safeParse(userinfoRaw)
-
-			if (!userinfoResult.success) {
-				const message = `Failed to parse user info: ${userinfoResult.error.message}`
-				if (!silent) {
-					console.error(chalk.red(`❌ ${message}`))
-				}
-				return { success: false, message }
-			}
-
-			const userinfo = userinfoResult.data
-
-			await saveAuthData(domain.host, {
-				id: userinfo.id,
-				tokenSet: {
-					access_token: tokenSet.access_token,
-					token_type: tokenSet.token_type ?? 'Bearer',
-					scope: tokenSet.scope ?? '',
-				},
-				email: userinfo.email,
-				name: userinfo.name,
-			})
-
+		if (!tokenSet) {
+			const message = 'No token received from authorization'
 			if (!silent) {
-				const name = userinfo.name ? ` (${userinfo.name})` : ''
-				console.log(
-					chalk.green(
-						`\n✅ Successfully logged in to ${domain.displayName} as ${chalk.cyan(userinfo.email)}${name}`,
-					),
-				)
+				console.error(chalk.red(`❌ ${message}`))
 			}
-
-			return { success: true, message: `Logged in to ${domain.displayName}` }
-		} catch (error) {
-			throw error
+			return { success: false, message }
 		}
+
+		const UserInfoSchema = z.object({
+			id: z.string(),
+			email: z.string(),
+			name: z.string().nullable().optional(),
+		})
+
+		const protectedResourceResponse = await client.fetchProtectedResource(
+			config,
+			tokenSet.access_token,
+			new URL(`${issuer}/userinfo`),
+			'GET',
+		)
+		const userinfoRaw = await protectedResourceResponse.json()
+		const userinfoResult = UserInfoSchema.safeParse(userinfoRaw)
+
+		if (!userinfoResult.success) {
+			const message = `Failed to parse user info: ${userinfoResult.error.message}`
+			if (!silent) {
+				console.error(chalk.red(`❌ ${message}`))
+			}
+			return { success: false, message }
+		}
+
+		const userinfo = userinfoResult.data
+
+		await saveAuthData(domain.host, {
+			id: userinfo.id,
+			tokenSet: {
+				access_token: tokenSet.access_token,
+				token_type: tokenSet.token_type ?? 'Bearer',
+				scope: tokenSet.scope ?? '',
+			},
+			email: userinfo.email,
+			name: userinfo.name,
+		})
+
+		if (!silent) {
+			const name = userinfo.name ? ` (${userinfo.name})` : ''
+			console.log(
+				chalk.green(
+					`\n✅ Successfully logged in to ${domain.displayName} as ${chalk.cyan(userinfo.email)}${name}`,
+				),
+			)
+		}
+
+		return { success: true, message: `Logged in to ${domain.displayName}` }
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)
 		if (!silent) {

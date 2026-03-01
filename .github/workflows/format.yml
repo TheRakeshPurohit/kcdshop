@@ -48,8 +48,8 @@ jobs:
           npx prettier --write "**/*.{js,jsx,ts,tsx,md,css}" --ignore-path
           .prettierignore
 
-      - name: 🔍 Run ESLint --fix
-        run: npm run lint -- --fix
+      - name: 🔍 Run Oxlint --fix
+        run: oxlint . --fix
 
       - name: 💾 Commit changes
         run: |

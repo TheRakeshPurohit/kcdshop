@@ -1,0 +1,22 @@
+{
+	"extends": ["./node_modules/@epic-web/config/oxlint-config.json"],
+	"env": {
+		"browser": true,
+		"node": true
+	},
+	"ignorePatterns": [
+		"**/.nx/**",
+		"**/example/playground/**",
+		"packages/workshop-cli/vitest.config.ts",
+		"playwright.config.ts"
+	],
+	"overrides": [
+		{
+			"files": ["example/**"],
+			"rules": {
+				"no-unused-vars": "off",
+				"vitest/no-import-node-test": "off"
+			}
+		}
+	]
+}

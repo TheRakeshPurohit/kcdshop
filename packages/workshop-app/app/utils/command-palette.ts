@@ -642,18 +642,17 @@ export class CommandPaletteController {
 	}
 
 	#createCommandContext(): CommandPaletteCommandContext {
-		const controller = this
 		return {
 			host: this.#host,
-			close() {
-				controller.close()
+			close: () => {
+				this.close()
 			},
-			keepOpen() {
-				controller.#keepOpenAfterRun = true
+			keepOpen: () => {
+				this.#keepOpenAfterRun = true
 			},
-			navigate(to: string) {
-				if (controller.#host?.navigate) {
-					controller.#host.navigate(to)
+			navigate: (to: string) => {
+				if (this.#host?.navigate) {
+					this.#host.navigate(to)
 					return
 				}
 				if (isBrowser()) {
@@ -662,19 +661,19 @@ export class CommandPaletteController {
 			},
 			clickKeyboardAction,
 			prompt: {
-				select<TValue>(
+				select: <TValue>(
 					prompt: Omit<
 						Extract<CommandPalettePrompt, { type: 'select' }>,
 						'options'
 					> & { options: Array<CommandPaletteSelectOption<TValue>> },
-				) {
-					return controller.#promptSelect<TValue>(prompt)
+				) => {
+					return this.#promptSelect<TValue>(prompt)
 				},
-				text(prompt: Extract<CommandPalettePrompt, { type: 'text' }>) {
-					return controller.#promptText(prompt)
+				text: (prompt: Extract<CommandPalettePrompt, { type: 'text' }>) => {
+					return this.#promptText(prompt)
 				},
-				number(prompt: Extract<CommandPalettePrompt, { type: 'number' }>) {
-					return controller.#promptNumber(prompt)
+				number: (prompt: Extract<CommandPalettePrompt, { type: 'number' }>) => {
+					return this.#promptNumber(prompt)
 				},
 			},
 		}

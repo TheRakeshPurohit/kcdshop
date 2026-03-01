@@ -12,10 +12,9 @@
 			]
 		},
 		"lint": {
-			"executor": "@nx/eslint:lint",
-			"outputs": ["{options.outputFile}"],
+			"executor": "nx:run-commands",
 			"options": {
-				"lintFilePatterns": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+				"command": "oxlint ."
 			},
 			"dependsOn": ["@epic-web/workshop-app:build"]
 		},

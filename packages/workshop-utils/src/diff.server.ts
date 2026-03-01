@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/order -- this must be first
+// oxlint-disable-next-line import/order -- this must be first
 import { getEnv } from './init-env.ts'
 
 import os from 'os'
@@ -81,8 +81,7 @@ function diffPathToRelative(filePath: string) {
 			.replace(/^(\.\\[ab]\\|\.\/[ab]\/|[ab][\\/])/, ''),
 	)
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const [workshopRootDirname, appId, id, ...relativePath] = normalizedPath
+	const relativePath = normalizedPath
 		.replace(
 			process.platform === 'win32' || normalizedPath.startsWith(path.sep)
 				? `${diffTmpDir}${path.sep}`
@@ -90,6 +89,7 @@ function diffPathToRelative(filePath: string) {
 			'',
 		)
 		.split(path.sep)
+		.slice(3)
 
 	return relativePath.join(path.sep)
 }

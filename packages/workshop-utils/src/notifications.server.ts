@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/order -- this must be first
+// oxlint-disable-next-line import/order -- this must be first
 import { getEnv } from './init-env.ts'
 
 import json5 from 'json5'

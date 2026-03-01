@@ -18,5 +18,8 @@ export function useAnsiToHtml() {
 
 // remove this when this is fixed: https://github.com/rburns/ansi-to-html/issues/112
 export function stripCursorMovements(data: string) {
-	return data.replace(/\u001b\[\d+A/g, '').replace(/\u001b\[\d+K/g, '')
+	const escapeChar = String.fromCharCode(27)
+	return data
+		.replaceAll(new RegExp(`${escapeChar}\\[\\d+A`, 'g'), '')
+		.replaceAll(new RegExp(`${escapeChar}\\[\\d+K`, 'g'), '')
 }

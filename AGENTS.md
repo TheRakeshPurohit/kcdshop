@@ -20,7 +20,7 @@ installed in individual repositories which resemble the structure of the
 
 - npm
 - node.js
-- eslint
+- oxlint
 - prettier
 - typescript
 - vitest
@@ -215,7 +215,7 @@ test('renders provided items', () => {
 
 The code style guide can be found in
 `node_modules/@epic-web/config/docs/style-guide.md` (once dependencies have been
-installed). Only the most important bits are enforced by eslint.
+installed). Only the most important bits are enforced by oxlint.
 
 - Prefer ECMAScript private fields (e.g., `#child`) over the `private` keyword
   for class fields.

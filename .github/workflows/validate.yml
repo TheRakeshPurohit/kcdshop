@@ -14,7 +14,7 @@ env:
 
 jobs:
   lint:
-    name: ⬣ ESLint
+    name: ⬣ Oxlint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

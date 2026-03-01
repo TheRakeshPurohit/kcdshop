@@ -99,7 +99,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "lint": "oxlint .",
     "build": "zshy",
     "postbuild": "node fix-bin.js",
     "build:watch": "nx watch --projects=epicshop -- nx run \\$NX_PROJECT_NAME:build"
@@ -119,7 +119,7 @@
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@epic-web/config": "^1.24.0",
+    "@epic-web/config": "^1.24.1",
     "@types/node": "^25.2.3",
     "@types/yargs": "^17.0.35",
     "vitest": "^4.0.18",

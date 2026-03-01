@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/order -- must appear first
+// oxlint-disable-next-line import/order -- must appear first
 import { getEnv } from '@epic-web/workshop-utils/init-env'
 
 import { spawn, type ChildProcess, execSync } from 'node:child_process'

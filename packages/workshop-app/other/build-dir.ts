@@ -17,7 +17,6 @@ const destDir = here('..', `dist`, dir)
 
 const ignore = [
 	'**/tsconfig.json',
-	'**/eslint*',
 	'**/__tests__/**',
 	// for development only
 	'dev-server.js',

@@ -45,8 +45,3 @@ if (result.status === 0) {
 	process.exit(result.status)
 }
 
-/*
-eslint
-  "no-undef": "off",
-  "vars-on-top": "off",
-*/
